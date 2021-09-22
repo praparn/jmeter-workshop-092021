@@ -1,0 +1,69 @@
+============================================================================================
+Part 1: Instll Plugin Manager / Open JMeter 
+============================================================================================
+1. (Load Test Machine) Download JAR file command: 
+    curl https://repo1.maven.org/maven2/kg/apc/jmeter-plugins-manager/1.6/jmeter-plugins-manager-1.6.jar > ~/apache-jmeter-5.4.1/lib/ext/jmeter-plugins-manager-1.6.jar
+
+2. (Load Test Machine) In case UltraVNC is cannot connect. Kill and recreate vnc session by command:
+    vncserver -kill :1
+    vncserver -localhost no -geometry 1600x900 :1
+
+3. (Load Test Machine) Open Jmeter GUI (If disapper. Please run
+    cd ~
+    ./apacher-jemeter-5.4.1/bin/jmeter
+
+============================================================================================
+Part 2: Check and Install Plugin via Plugin Manager
+============================================================================================
+1. (Load Test Machine) Reopen JMeter after install plugins
+
+2. (Load Test Machine) Choose menu "Options" ==> "Plugins Manager"
+
+3. (Load Test Machine) Check existing plugin by tab "Installed Plugins"
+
+4. (Load Test Machine) Install avaliable plugins "3Basic Graphs","5 Additional Graphs"
+
+5. (Local machine): Open "KickStart_WorkShop_2_4_FirstPage.jmx" and Verify and Config "User Defined Variables" from Test Plan
+    BaseIP: <Add private ip of application machine>
+    MariaUserName:  <Verify>
+    MariaPassWord:  <Verify>
+    MariaPort:      <Verify>
+    MongoDBPort:    <Verify>
+    MeanPort:       <Verify>
+    MegentoPort:    <Verify>
+
+6. (Load Test Machine) Add some listener under thread group. We will find new pluging there
+    "jp@gc - Hits per Second" ,"jp@gc - Response Latencies Over Time", "jp@gc - Response Times Over Time", "jp@gc - Response Codes per Second", "jp@gc - Active Threads Over Time"
+
+7. (Load Test Machine) Save TestPlan and Start test performance by command:
+
+============================================================================================
+Part 3: Install plugin via command line
+============================================================================================
+1. Install uzip and Download plugin and unzip Example (Custom Thread Groups)
+    cd ~
+    curl https://jmeter-plugins.org/files/packages/jpgc-casutg-2.8.zip > ~/jpgc-casutg-2.8.zip
+    sudo apt-get install -y unzip
+    unzip jpgc-casutg-2.8.zip -d jpgc-casutg-2.8
+    cp ~/jpgc-casutg-2.8/lib/ext/jmeter-plugins-casutg-2.8.jar ~/apache-jmeter-5.4.1/lib/ext/
+
+2. Restart JMeter and Open "KickStart_WorkShop_2_4_FirstPage.jmx" 
+
+3. Add Thread Group "jp@gc - Ultimate Thread Group
+    3.1 Add First Group 100 User
+        3.1.1 Start Thread Count: 100
+        3.1.2 Initial Delay,sec: 0 (default)
+        3.1.3 Startup Time,sec: 30 (default)
+        3.1.4 Hold Load For.sec: 10
+        3.1.5 Shutdown Time: 10 (deault)
+
+    3.2 Add Second Group 200 User 
+        3.2.1 Start Thread Count: 200
+        3.2.2 Initial Delay,sec: 30
+        3.2.3 Startup Time,sec: 30 (default)
+        3.2.4 Hold Load For.sec: 60 (default)
+        3.2.5 Shutdown Time: 100 
+   
+4. Copy all element under original thread Group to new thread Group and disable original thread group
+
+5.  Start test performance

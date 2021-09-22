@@ -1,0 +1,88 @@
+Part 1 : Start Performance Test (Load Test Machine)
+============================================================================================
+0. In case UltraVNC is cannot connect. Kill and recreate vnc session by command:
+    vncserver -kill :1
+    vncserver -localhost no -geometry 1600x900 :1
+
+============================================================================================
+Part 2: Basic LoadTest for MEAN.JS
+============================================================================================
+0. (Load Test Machine): Open testplan for kickstart on: "KickStart_MEANJS_WorkShop_1_5.jmx"
+
+1. (Local machine): Verify and Config "User Defined Variables" from Test Plan: "KickStart_MEANJS_WorkShop"
+    BaseIP: <Add private ip of application machine>
+    MariaUserName:  <Verify> bn_magento
+    MariaPassWord:  <Verify> bitnami
+    MariaPort:      <Verify> 3306
+    MongoDBPort:    <Verify> 27017
+    MeanPort:       <Verify> 3000
+    MegentoPort:    <Verify> 80
+
+2. (Load Test Machine) Verify Config Element on Test Plan
+    2.1 HTTP Header for Android:
+    2.2 HTTP Cookie Manager:
+    2.3 HTTP Cache Manager:
+
+3. (Load Test Machine) Enable Thread Group "Thread Group 100 Users" and Run (Total 2 min for lab before stop)
+
+
+4. (Application Machine) During load test was run. Check resource consume via cAdvisor, command listening   
+    4.1 Run command below for check result:
+        4.1.1 docker stats
+        4.1.2 top
+        4.1.3 vmstat 2
+        4.1.4 iostat -xtc 2
+        4.1.5 sar -n DEV 2
+
+
+5. (Load Test Machine) After pass 2 min stop load test and check result from JMeter
+    5.1 Listener: Result
+    5.2 Listener: View Results in Table
+    5.3 Listener: Summary Report
+    5.4 Listener: Response Time Graph
+
+*Remark:
+    If you have time slot more. Let's try to enable 200 thread group for test and disable existing thread group (Enable one-by-one)
+
+
+============================================================================================
+Part 3: Basic LoadTest for MAGENTO
+============================================================================================
+0. (Load Test Machine): Open testplan for kickstart on: "KickStart_MAGENTO_WorkShop_1_5.jmx"
+
+1. (Local machine): Verify and Config "User Defined Variables" from Test Plan: "KickStart_MAGENTO_WorkShop"
+    BaseIP: <Add private ip of application machine>
+    MariaUserName:  <Verify>
+    MariaPassWord:  <Verify>
+    MariaPort:      <Verify>
+    MongoDBPort:    <Verify>
+    MeanPort:       <Verify>
+    MegentoPort:    <Verify>
+
+2. (Load Test Machine) Verify Config Element on Test Plan
+    2.1 HTTP Header for Android:
+    2.2 HTTP Cookie Manager:
+    2.3 HTTP Cache Manager:
+
+3. (Load Test Machine) Enable Thread Group "Thread Group 10 Users" and Run (Total 2 min for lab before stop)
+
+
+4. (Application Machine) During load test was run. Check resource consume via cAdvisor, command listening   
+    4.1 Run command below for check result:
+        4.1.1 docker stats
+        4.1.2 top
+        4.1.3 vmstat 2
+        4.1.4 iostat -xtc 2
+        4.1.5 sar -n DEV 2
+
+
+5. (Load Test Machine) After pass 2 min stop load test and check result from JMeter
+    5.1 Listener: Result
+    5.2 Listener: View Results in Table
+    5.3 Listener: Summary Report
+    5.4 Listener: Response Time Graph
+
+
+6. (Application Server) Remove container of magento for reserve resource
+    docker stop magento phpmyadmin mariadb elasticsearch
+    docker rm magento phpmyadmin mariadb elasticsearch

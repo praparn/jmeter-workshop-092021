@@ -1,0 +1,147 @@
+Part 1 : Start Performance Test (Load Test Machine)
+============================================================================================
+0. In case UltraVNC is cannot connect. Kill and recreate vnc session by command:
+    vncserver -kill :1
+    vncserver -localhost no -geometry 1600x900 :1
+
+============================================================================================
+Part 2: Start Performance Test Scenario 1 (Scratch Test)
+============================================================================================
+0. (Load Test Machine): Clone repository for all test plan as command below:
+   cd ~
+   git clone https://github.com/praparn/jmeter-workshop-092021
+   *Remark: Check public ip of Load test by command: "curl http://ifconfig.co"
+
+1. (Load Test Machine): Open url of all MEAN.JS in browser: 
+    1.1 MEAN: ==> http://<Application Machine>:3000
+    1.2 CADVISOR: ==> http://<Application Machine>:8080
+    1.3 MONGO Express: ==> http://<Application Machine>:8081
+    1.4 MAGENTO: ==> http://<Application Machine>
+    1.5 PHPMYADMIN: ==> http://<Application Machine>:8091
+
+2. (Load Test Machine) Run GUI on JMETER by command: 
+    cd ~
+    ./apache-jmeter-5.4.1/bin/jmeter
+
+3. (Load Test Machine) Create Test Plan and configure properties below:
+    Name: WorkShop_1_3
+    [User Defined Variables]
+        Name: BaseIP            Value: <Private IP of Application Machine>
+        Name: MariaUserName     Value: bn_magento 
+        Name: MariaPassWord     Value: bitnami 
+        Name: MariaPort         Value: 3306
+        Name: MongoDBPort       Value: 27017
+        Name: MeanPort          Value: 3000
+        Name: MagentoPort       Value: 80
+
+3. (Load Test Machine) Add Thread Group under "Test Plan"
+    3.1 Open menu: (Add ==> Thread Group (Users) ==> Thread Grouop)
+    3.2 Set Properties:
+        Action to be taken after a Sampler error:
+            [X] Continue    [] Start Next Thread Loop      [] Stop Thread       [] Stop Test        [] Stop Test Now
+        Number of Threads (users): 50
+        Ramp-Up Periods (in seconds): 10
+        Loop Count: [ ] Forever : 10
+
+4. (Load Test Machine) Add HTTP Request for MEAN.JS under "Thread Group"
+    4.1 Open menu: (Add ==> Sampler ==> HTTP Request)
+    4.2 Set Properties:
+         Name: MEAN.JS HTTP Request
+        [Tab: Basic]
+            Protocol [http]: http
+            Server Name or IP: ${BaseIP}
+            Port Number: ${MeanPort}
+            Method: GET
+            Path: /
+
+5. (Load Test Machine) Add HTTP Request for MAGENTO under "Thread Group"
+    5.1 Open menu: (Add ==> Sampler ==> HTTP Request)
+    5.2 Set Properties:
+         Name: MAGENTO HTTP Request
+        [Tab: Basic]
+            Protocol [http]: http
+            Server Name or IP: ${BaseIP}
+            Port Number: ${MagentoPort}
+            Method: GET
+            Path: /
+
+6. (Load Test Machine) Add TCP Sampler for MariaDB under "Thread Group"
+    6.1 Test connection TCP to mariadb via port 3306 by command: telnet <Private IP of Application Machine> 3306
+        ================================================================================================================
+        Example response:
+        ubuntu@ip-10-21-1-152:~$ telnet 10.21.1.93 3306
+            Trying 10.21.1.93...
+            Connected to 10.21.1.93.
+            Escape character is '^]'.
+            Y                     x4:cfWa??!??`@\2"QQ&fSLcmysql_native_passwordConnection closed by foreign host.
+        ================================================================================================================
+
+    6.2 Open menu: (Add ==> Sampler ==> TCP Sampler)
+    6.3 Set Properties:
+         Name: MariaDBTCPSampler
+         TCPClient classname:
+        [Target Server]
+            Server Name or IP: ${BaseIP}
+            Port Number: ${MariaPort}
+            Text to send: Test
+        [Timeouts (milliseconds)]
+            Connection: 1000
+            Response: 1000
+        [x] Re-use connection          [x]  Close connection 
+         
+7. (Load Test Machine) Add JSR223 Sampler for MongoDB under "Thread Group"
+    7.1 Test connection TCP to mongodb via port 27017 by command: telnet <Private IP of Application Machine> 27017
+        ================================================================================================================
+        Example response:
+        ubuntu@ip-10-21-1-152:~$ telnet 10.21.1.93 27017
+            Trying 10.21.1.93...
+            Connected to 10.21.1.93.
+            Escape character is '^]'.
+        ================================================================================================================
+
+    7.2 Open menu: (Add ==> Sampler ==> JSR223 Sampler)
+    7.3 Set Properties:
+         Name: MongoDBJSR223Sampler
+         [Script language]
+            Language: groovy (Groovy 3.0.7 / Groovy Scription Engine 2.0)
+        
+         [Script compilation caching]
+    
+    7.4 Script
+        ================================================================================================================
+def sock = new Socket()
+def host = "${BaseIP}"
+def port = ${MongoDBPort}
+def timeout = 1000
+sock.setSoTimeout(1000)
+sock.connect(new InetSocketAddress(host, port))
+
+if (sock.isConnected()) {
+    log.info('Connection established')
+    SampleResult.setSuccessful(true)
+}
+else {
+    log.info('Server is not listening')
+    SampleResult.setSuccessful(false)
+}
+        ================================================================================================================          Cache compiled script if avaliable:[x]
+
+8. (Load Test Machine) Add Flow Control Action under "Thread Group"
+    8.1 Open menu: (Add ==> Sampler ==> Flow Control Action)
+    8.2 Set Properties:
+        Name: FlowThinkTime
+        Logical Action on Thread:
+            [x] Pause               Duration (milliseconds): 200
+
+9. (Load Test Machine) Add View Results Tree under "Thread Group" / Log View
+    9.1 Open menu: (Add ==> Listener ==> View Result Tree)
+        Name: Result
+
+    9.2 Open menu: Options ==> [x] Log Viewer
+10. (Load Test Machine) Save TestPlan as name "WorkShop_1_3.jmx" on Folder "Workshop-1-3-Basic_Sampler"
+
+11. (Load Test Machine) Start run jmeter by menu: Run ==> Start
+    11.1 Start via menu: (Run ==> Start)
+    11.2 View The real time test on result Tree
+    11.3 Check overall capacity on CADVISOR
+    11.4 Wait until test was finished

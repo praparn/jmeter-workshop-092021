@@ -1,0 +1,77 @@
+============================================================================================
+Part 1: Open and Configure Test Plan
+============================================================================================
+1. (Load Test Machine) In case UltraVNC is cannot connect. Kill and recreate vnc session by command:
+    vncserver -kill :1
+    vncserver -localhost no -geometry 1600x900 :1
+
+2. (Load Test Machine) Open Jmeter GUI (If disapper. Please run)
+    cd ~
+    ./apache-jmeter-5.4.1/bin/jmeter
+
+3. (Local machine): Open "~/jmeter-workshop-092021/Workshop-2-5-Cli_DistributedLoad/jmeter/Template_Workshop_2_5_FirstPage.jmx" and Verify and Config "User Defined Variables" from Test Plan
+    BaseIP: <Add private ip of application machine>
+    MariaUserName:  <Verify>
+    MariaPassWord:  <Verify>
+    MariaPort:      <Verify>
+    MongoDBPort:    <Verify>
+    MeanPort:       <Verify>
+    MegentoPort:    <Verify>
+
+4. (Load Test Machine) Check Thread Group's Configuration like below
+    Thread Group:
+        Number of Threads (users): 800
+        Ramp-Up Periods (in seconds): 10
+        Loop Count: 30
+4. (Load Test Machine) Disable all listener and close JMeter
+
+5. (Load Test Machine) Run load test in command line mode by command (Record total sample and Time to run)
+    cd ~
+    ./apache-jmeter-5.4.1/bin/jmeter -n -t ~/jmeter-workshop-092021/Workshop-2-5-Cli_DistributedLoad/jmeter/Template_Workshop_2_5_FirstPage.jmx -l ~/jmeter-workshop-092021/Workshop-2-5-Cli_DistributedLoad/jmeter/result_2_5.jtl
+
+
+6. (Load Test Machine) Open JMEter GUI/"~/jmeter-workshop-092021/Workshop-2-5-Cli_DistributedLoad/jmeter/Template_Workshop_2_5_FirstPage.jmx"
+
+7. (Load Test Machine) Check Listener result by file ~/jmeter-workshop-092021/Workshop-2-5-Cli_DistributedLoad/jmeter/result_2_5.jt
+
+============================================================================================
+Part 2: Build Image of Docker for JMeter
+============================================================================================
+1. (Load Test Machine) Open JMEter GUI/"~/jmeter-workshop-092021/Workshop-2-5-Cli_DistributedLoad/jmeter/Template_Workshop_2_5_FirstPage.jmx" and Check Thread Group's Configuration like below (800 / 3)
+    Thread Group:
+        Number of Threads (users): 267
+        Ramp-Up Periods (in seconds): 10
+        Loop Count: 30
+
+2. (Load Test Machine) Build docker image for JMeter by command:
+    cd ~/jmeter-workshop-092021/Workshop-2-5-Cli_DistributedLoad/dockerfile
+    docker build -t jmeter ./
+
+3. (Load Test Machine) Check image by command: docker image ls
+
+4. (Load Test Machine) Create docker network and access to share testplan path by command:
+    docker network create --driver bridge \
+    --subnet=192.168.100.0/24 --gateway=192.168.100.5 --opt="com.docker.network.mtu"="1500" jmeternet
+
+5. (Load Test Machine) Run 3 jmeter server and 1 jmeter client for generate load by command:
+    cd ~/jmeter-workshop-092021/Workshop-2-5-Cli_DistributedLoad/
+    chmod +x ./init.sh
+    ./init.sh
+
+5. (Load Test Machine) Monitor process via HTOP/Top until finished:
+
+6. (Load Test Machine) Open JMeter for Check Listener Result:
+    ~/apache-jmeter-5.4.1/bin/jmeter
+
+7. (Load Test Machine) Clear up network by command: docker network rm jmeternet
+
+*Remark: If you have a lot of free time. Please try Part 2 again with Thread Grouop below (1200 Users)
+    Thread Group:
+        Number of Threads (users): 400
+        Ramp-Up Periods (in seconds): 10
+        Loop Count: 30
+
+*Clean Up (Application Machine)
+docker stop cadvisor webmongo mean db
+docker rm cadvisor webmongo mean db
+docker network rm 

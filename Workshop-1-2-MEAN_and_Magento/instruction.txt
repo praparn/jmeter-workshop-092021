@@ -1,0 +1,186 @@
+============================================================================================
+Lab Description
+============================================================================================
+Machine name		            	Roles:					IP Address: (Private)		IP Address: (Public)       SSH
+Training_JMeter_StudentGX_1      Load Test Machine			10.0.1.X 					  X.X.X.X   	             ssh -i "docker_lab.pem" ubuntu@X.X.X.X
+Training_JMeter_StudentGX_1      Application Machine        10.0.1.X 				      X.X.X.X                    ssh -i "docker_lab.pem" ubuntu@X.X.X.X      
+============================================================================================
+
+Part0 : Start Performance Test (Load Test Machine)
+============================================================================================
+0. In case UltraVNC is cannot connect. Kill and recreate vnc session by command:
+    vncserver -kill :1
+    vncserver -localhost no -geometry 1600x900 :1
+
+============================================================================================
+Step 1: Setup MEAN.JS (Application Machine)
+============================================================================================
+0. (Application Machine) Install performance monitor tools
+sudo su -
+echo "vm.max_map_count = 262144" >> /etc/sysctl.conf
+apt-get update && sudo apt-get install iptraf blktrace nicstat linux-tools-common linux-tools-generic systemtap trace-cmd tiptop msr-tools smartmontools sysstat -y && apt install perf-tools-unstable
+curl https://s3.amazonaws.com/download.draios.com/stable/install-sysdig -o install-sysdig && cat ./install-sysdig | sudo bash
+sed -i -e 's/false/true/g' /etc/default/sysstat
+sed -i -e 's/5-55/*/g' /etc/cron.d/sysstat
+sed -i -e 's/10/2/g' /etc/cron.d/sysstat
+reboot
+
+1. (Application Machine) Pull image for meanjs by command: 
+    docker image pull mongo:5.0-rc
+    docker image pull mongo-express:0.54
+    docker image pull labdocker/mean:lab
+    docker image pull labdocker/cadvisor:latest
+
+2. (Application Machine) Start create network and basic meanstack by command:
+    docker container run -dt -p 27017:27017 --name db mongo:5.0-rc
+    docker logs -f db (Wait until log is stop)
+    docker container run -dt -p 3000:3000 --link db:db_1 --name mean labdocker/mean:lab
+    docker logs -f mean (Wait until log is stop)
+   *Remark: 
+        2.1 Wait until mean ready with simple log below
+        2.2 In case need to remove and redeploy please kindly following command below:
+            docker stop mean db && docker rm mean db
+
+---------------------------------------------------------------------------------------------
+MEAN.JS - Development Environment
+
+Environment:     development
+Server:          http://0.0.0.0:3000
+Database:        mongodb://172.17.0.2/mean-dev
+App version:     0.6.0
+MEAN.JS version: 0.6.0
+---------------------------------------------------------------------------------------------
+
+3. (Load Test Machine) Test access web from url: curl http://<private ip of Application Machine>:3000
+
+4. (Application Machine) Run mongo-express for provide mongodb webgui by command:
+    docker container run -dt --name mongoexpress \
+    -e ME_CONFIG_MONGODB_SERVER=db_1 --link db:db_1 \
+    -p 8081:8081 mongo-express:0.54
+
+5. (Application Machine) Start monitoring dashboard for performance analysis by command:
+	docker container run \
+    --mount type=bind,source=/var/run,target=/var/run \
+    --mount type=bind,source=/sys,target=/sys,readonly \
+    --mount type=bind,source=/var/lib/docker,target=/var/lib/docker,readonly \
+    --publish=8080:8080 \
+    --detach=true \
+    --name=cadvisor \
+    labdocker/cadvisor:latest
+
+6. (Load Test Machine) Check meanjs, open cadvisor and mongoexpress by webbrowser:
+    Open url: http://<public ip of MEAN.JS>:3000   ==> for MEAN Application
+    Open url: http://<public ip of MEAN.JS>:8080   ==> for cAdvisor
+    Open url: http://<public ip of MEAN.JS>:8081   ==> for Mongo-express
+    
+*Remark:
+    Case Roll Back:
+        docker stop mean mongoexpress cadvisor db
+        docker rm mean mongoexpress cadvisor db
+
+============================================================================================
+Step 2: Setup Magento (Application Machine)
+============================================================================================
+1. (Application Machine) Pull image by command: 
+    docker image pull bitnami/mariadb:10.3
+    docker image pull bitnami/magento:latest
+    docker image pull bitnami/phpmyadmin:latest
+    docker image pull bitnami/elasticsearch:6
+
+2. (Application Machine) Create network by command: 
+   docker network create --driver bridge \
+--subnet=192.168.101.0/24 --ip-range=192.168.101.128/25 \
+--gateway=192.168.101.5 --opt="com.docker.network.mtu"="9000" jmeter
+
+2. (Application Machine) Run docker container mariadb/elasticseach by command:
+   docker container run -d --name mariadb \
+  --env ALLOW_EMPTY_PASSWORD=yes \
+  --env MARIADB_USER=bn_magento \
+  --env MARIADB_PASSWORD=bitnami \
+  --env MARIADB_DATABASE=bitnami_magento \
+  --network jmeter \
+  --volume mariadb_data:/bitnami/mariadb \
+  -p 3306:3306 \
+  bitnami/mariadb:10.3
+
+    docker container run -dt --name elasticsearch \
+    -p 9200:9200 -p 9300:9300 \
+    -e "discovery.type=single-node" \
+    --network jmeter \
+    bitnami/elasticsearch:6
+    
+
+3. (Application Machine) Run docker container magento by command:
+    docker container run -d --name magento \
+  -p 80:8080 -p 443:8443 \
+  --env MAGENTO_DATABASE_HOST=mariadb \
+  --env MAGENTO_DATABASE_PORT_NUMBER=3306 \
+  --env MAGENTO_DATABASE_NAME=bitnami_magento \
+  --env ALLOW_EMPTY_PASSWORD=yes \
+  --env MAGENTO_DATABASE_USER=bn_magento \
+  --env MAGENTO_DATABASE_PASSWORD=bitnami \
+  --env ELASTICSEARCH_HOST=elasticsearch \
+  --env ELASTICSEARCH_PORT_NUMBER=9200 \
+  --env MAGENTO_HOST=<Private IP of Application Machine> --network jmeter bitnami/magento:latest
+
+    *Remark:
+    DB Name: magento
+    DB Username: magento
+    DB Password: magento
+    Root Password: P@ssw0rd
+
+4. (Application Machine) Run docker container phpmyadmin by command:
+    docker container run -dt --name phpmyadmin -p 8091:8080 \
+    --env PMA_HOST=mariadb \
+    --env PMA_PORT=3306 \
+    --env PMA_USER=bn_magento \
+    --env PMA_PASSWORD=bitnami \
+    --env PMA_ARBITRARY=1 \
+    --network jmeter \
+    bitnami/phpmyadmin:latest
+
+5. (Application Machine) Check logging of Magento:
+    docker container logs -f magento
+    ****************************************************************************************
+magento 01:28:02.82 
+magento 01:28:02.82 Welcome to the Bitnami magento container
+magento 01:28:02.83 Subscribe to project updates by watching https://github.com/bitnami/bitnami-docker-magento
+magento 01:28:02.83 Submit issues and feature requests at https://github.com/bitnami/bitnami-docker-magento/issues
+magento 01:28:02.83 
+magento 01:28:02.83 INFO  ==> ** Starting Magento setup **
+magento 01:28:02.88 INFO  ==> Configuring PHP options
+magento 01:28:02.90 INFO  ==> Validating settings in MYSQL_CLIENT_* env vars
+magento 01:28:02.95 WARN  ==> You set the environment variable ALLOW_EMPTY_PASSWORD=yes. For safety reasons, do not use this flag in a production environment.
+magento 01:28:02.99 INFO  ==> Ensuring Magento directories exist
+magento 01:28:03.00 INFO  ==> Configuring permissions
+magento 01:28:03.00 INFO  ==> Trying to connect to the database server
+magento 01:28:03.03 INFO  ==> Trying to connect to Elasticsearch
+magento 01:28:03.06 INFO  ==> Running Magento install script
+magento 01:29:20.00 INFO  ==> Reindexing
+magento 01:29:35.01 INFO  ==> Flushing cache
+magento 01:29:36.87 INFO  ==> Persisting Magento installation
+magento 01:30:52.34 INFO  ==> ** Magento setup finished! **
+
+magento 01:30:52.36 INFO  ==> ** Starting cron **
+magento 01:30:52.39 INFO  ==> ** Starting Apache **
+[Sun Jul 11 01:30:52.693080 2021] [ssl:warn] [pid 1] AH01909: www.example.com:8443:0 server certificate does NOT include an ID which matches the server name
+[Sun Jul 11 01:30:52.693911 2021] [ssl:warn] [pid 1] AH01909: www.example.com:8443:0 server certificate does NOT include an ID which matches the server name
+[Sun Jul 11 01:30:52.742532 2021] [ssl:warn] [pid 1] AH01909: www.example.com:8443:0 server certificate does NOT include an ID which matches the server name
+[Sun Jul 11 01:30:52.743327 2021] [ssl:warn] [pid 1] AH01909: www.example.com:8443:0 server certificate does NOT include an ID which matches the server name
+[Sun Jul 11 01:30:52.856097 2021] [mpm_prefork:notice] [pid 1] AH00163: Apache/2.4.48 (Unix) OpenSSL/1.1.1d PHP/7.4.21 configured -- resuming normal operations
+[Sun Jul 11 01:30:52.856502 2021] [core:notice] [pid 1] AH00094: Command line: '/opt/bitnami/apache/bin/httpd -f /opt/bitnami/apache/conf/httpd.conf -D FOREGROUND'
+
+    ****************************************************************************************
+
+6. (Load Test Machine) Open phpmyadmin and get username/password of Magento:
+    Open url: http://<private ip of Magento>:8091   ==> for phpmyadmin   (username:bn_magento, password: bitnami)
+
+7. (Load Test Machine) Open url for website
+    Open url: http://<private ip of Magento>       ==> for Magento Application
+    Open url: http://<private ip of Magento>/admin  ==> for Magento Application (Admin Page) (User: user, Password: bitnami1)
+    
+*Remark:
+    Case Roll Back:
+        docker container stop magento phpmyadmin mariadb elasticsearch
+        docker container rm magento phpmyadmin mariadb elasticsearch
+        docker volume rm mariadb_data

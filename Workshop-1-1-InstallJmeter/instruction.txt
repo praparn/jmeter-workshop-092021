@@ -1,0 +1,58 @@
+Link for download:
+1. Check LABSheet.xlsx for check information about your machine and your "docker_lab" (For MAC OS X) or "docker_lab.ppk" (For Windows)
+2. Check Document for connect to your AWS
+3. Install VNC-Viewer on your machine
+
+============================================================================================
+Lab Description
+============================================================================================
+Machine name		            	Roles:						IP Address: (Private)		IP Address: (Public)       SSH
+Training_JMeter_StudentGX_1      Load Test Machine			10.0.1.X 					   X.X.X.X   	               ssh -i "docker_lab.pem" ubuntu@X.X.X.X
+Training_JMeter_StudentGX_1      Application Machine     10.0.1.X 				      X.X.X.X                    ssh -i "docker_lab.pem" ubuntu@X.X.X.X      
+============================================================================================
+
+============================================================================================
+Step 1: Install require component for remote (Load Test Machine)
+============================================================================================
+1. SSH/Putty to "Load Test Machine" for operate with command:
+   ssh -i docker_lab.pem ubuntu@<Public IP Address> or Putty
+
+   Ex:
+   ssh -i "docker_lab.pem" ubuntu@52.221.254.40
+
+2. (Load Test Machine)Install VNC Server and Desktop:
+   sudo su -
+   chmod +x /tmp/setupjmeter.sh
+   /tmp/setupjmeter.sh
+   reboot
+
+3. (Load Test Machine) After finished and restart machine. Reconnect ssh again and initial vncserver configuration by command:
+   vncpasswd
+      password:   ==> input "P@ssw0rd" on twice time ==> "n" for view-only password
+
+4. (Load Test Machine) Download vncconfiguration and apply by command:
+   curl https://raw.githubusercontent.com/praparn/sourcesetup/master/xstartup > /home/ubuntu/.vnc/xstartup
+
+5. (Load Test Machine)Exist the ssh and Start VNCServer again with remote option
+   vncserver -kill :1
+   vncserver -localhost no -geometry 1600x900 :1
+
+6. (Load Test Machine) Download jmeter version 5.0 and install on machine by command:
+   curl https://downloads.apache.org/jmeter/binaries/apache-jmeter-5.4.1.tgz > /home/ubuntu/apache-jmeter-5.4.1.tgz
+   tar -zxvf /home/ubuntu/apache-jmeter-5.4.1.tgz && cd apache-jmeter-5.4.1/bin/
+   sed -i -e 's/"${HEAP:="-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m"}"/"${HEAP:="-Xms2g -Xmx2g -XX:MaxMetaspaceSize=512m"}"/g' /home/ubuntu/apache-jmeter-5.4.1/bin/jmeter
+
+7. (Load Test Machine) Git clone all source code by command:
+   cd ~
+   git clone https://github.com/praparn/jmeter-workshop-092021
+   *Remark: Check public ip of Load test by command: "curl http://ifconfig.co"
+
+8. (Client) Test open ultravnc client to connect (Setup option or high resolution of picture)
+   <public ip address>:1
+   *Remark: accept unencrypted connection and input password to "P@ssw0rd"
+
+9. (Client) Open terminal by menu: Application ==> System Tools ==> Xterm
+   *Remark: Please disable lockscreen feature on menu "Settings" ==> "Privacy" ==> "Screen Lock" ==> Disable "Automatic Screen Lock", "Blank Screen Delay (Never)"
+
+10. (Client) Run jmeter by command:
+   /home/ubuntu/apache-jmeter-5.4.1/bin/jmeter

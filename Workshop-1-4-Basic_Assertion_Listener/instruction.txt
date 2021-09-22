@@ -1,0 +1,107 @@
+Part 1 : Start Performance Test (Load Test Machine)
+============================================================================================
+0. In case UltraVNC is cannot connect. Kill and recreate vnc session by command:
+    vncserver -kill :1
+    vncserver -localhost no -geometry 1600x900 :1
+
+1. Recreate file: Result.csv
+   rm ~/jmeter-workshop-092021/Result.csv
+   touch ~/jmeter-workshop-092021/Result.csv
+
+============================================================================================
+Part 2: Start Performance Test Scenario 2 (Add Listener)
+============================================================================================
+0. (Load Test Machine): Open previous testplan from workshop 1.3 for enhancement and Save as Test Plan's name to: WorkShop_1_4.jmx
+
+1. (Local machine): Change Test Plan name to "WorkShop_1_4" and Save to Folder "Workshop-1-4-Basic_Assertion_Listener"
+
+2. (Load Test Machine) Add Listener "View Result in Table" under each Sampler (Keep Default Name)
+    2.1 MEAN.JS HTTP Request (Sampler)
+    2.2 MAGENTO HTTP Request (Sampler)
+    2.3 MariaDBTCPSampler (Sampler)
+    2.4 MongoDBJSR223Sampler (Sampler)
+
+3. (Load Test Machine) Add Listener "Summary Report","Aggregate Report","Graph Results","Response Time Graph", "Simple Data Writer" under "Thread Group"
+    3.1 Listener: Response Time Graph: 
+        3.1.1 [Graph Setting]
+            3.1.1.1 Interval (ms): 1000
+        
+        3.1.2 [Title]
+            3.1.2.1 Graph Title: Response Time First Page
+            3.1.2.2 Front: Sans Serif
+            3.1.2.3 Size: 12
+    
+    3.2 Listener: Simple Data Writer:
+        3.2.1 Name: Export Result to File
+        3.2.2 Filename: ~/jmeter-workshop-062019/Result.csv <Browse>
+        3.2.3 Log/Display Only:
+            3.2.3.1 [ ] Errors
+            3.2.3.2 [x] Successes
+
+============================================================================================
+Part 3: Start Performance Test Scenario 3 (Add Assertion/More Listener)
+============================================================================================
+
+1. (Load Test Machine) Add Assetion under each Sampler (Keep Default Name)
+    1.1 MEAN.JS HTTP Request (Sampler)
+        1.1.1 Open menu: (Add ==> Assertion ==> Response Assertion)
+        1.1.2 Set Properties:
+            Name: MEAN.JS Assertion
+            Apply to: [x] Main sample and sub-samples
+            Field to Test: [x] Documents (text)
+            Pattern matching Rule: [x] Contains
+            Patterns to Test: "MEAN.JS"
+
+    1.2 MAGENTO HTTP Request (Sampler)
+        1.2.1 Open menu: (Add ==> Assertion ==> Response Assertion)
+        1.2.2 Set Properties:
+            Name: MAGENTO Assertion
+            Apply to: [x] ] Sub-samples only
+            Field to Test: [x] Response Header
+            Pattern matching Rule: [x] Contains
+            Patterns to Test: "X-Powered-By: PHP/7.4.23"
+
+    1.3 MariaDBTCPSampler (Sampler)
+        1.3.1 Open menu: (Add ==> Assertion ==> Compare Assertion)
+        1.3.2 Set Properties:
+            Name: MariaDB Assertion
+            Compare Content: True
+            Compare Time: -1
+            Regex String: "5.5.5-10.3.30-MariaDB"
+
+    1.4 MongoDBJSR223Sampler (Sampler) 
+        1.4.1 Open menu: (Add ==> Assertion ==> Duration Assertion)
+        1.4.2 Set Properties:
+            Name: MonGoDB Assertion
+            Apply to: Main sample only
+            Duration to Assetion:
+                Duration in milliseconds: 500
+
+2. (Load Test Machine) Add Assertion "Response Assertion" under "Thread Group"
+    2.1 Open menu: (Add ==> Assertion ==> Response Assertion)
+    2.2 Set Properties:
+        Name: Response Assertion
+        Apply to: [x] Main sample only
+        Field to Test: Response Code
+        Pattern matching Rule: [x] Equals
+        Patterns to Test: "200"
+
+3. (Load Test Machine) Add Assertion "Size Assertion" under "Thread Group"
+    2.1 Open menu: (Add ==> Assertion ==> Size Assertion)
+    2.2 Set Properties:
+        Name: Size Assertion
+        Apply to: [x] Main sample and sub-samples
+        Response Size Field to Test: 
+            [x] Full Response
+        Size in bytes: 50000
+        Type of Comparison: <=
+
+4. (Load Test Machine) Start run jmeter by menu: Run ==> Start
+    4.1 Start via menu: (Run ==> Start)
+    4.2 View The real time test on result Tree
+    4.3 Check overall capacity on CADVISOR
+    4.4 Wait until test was finished
+    4.5 Check file output from ~/jmeter-workshop-092021/Result.csv <browse>
+    *Remark: If ~/jmeter-workshop-092021/Result.csv is not appear. 
+        - touch ~/jmeter-workshop-092021/Result.csv
+        - Rerun JMeter with Overwrite Existing Function

@@ -1,0 +1,58 @@
+Part 1 : Start Performance Test (Load Test Machine)
+============================================================================================
+0. In case UltraVNC is cannot connect. Kill and recreate vnc session by command:
+    vncserver -kill :1
+    vncserver -localhost no -geometry 1600x900 :1
+
+============================================================================================
+Part 2: CSV for MEAN.JS
+============================================================================================
+0. (Load Test Machine): Open testplan for kickstart on: "KickStart_MEANJS_WorkShop_2_2.jmx"
+
+1. (Load Test machine): Verify and Config "User Defined Variables" from Test Plan: "KickStart_MEANJS_WorkShop"
+    BaseIP: <Add private ip of application machine>
+    MariaUserName:  <Verify>
+    MariaPassWord:  <Verify>
+    MariaPort:      <Verify>
+    MongoDBPort:    <Verify>
+    MeanPort:       <Verify>
+    MegentoPort:    <Verify>
+
+2. (Load Test machine): Open LogViewer by Click Menu ==> Options ==> Log LogViewer
+
+3. (Load Test machine): Start performance test (Round1) and check log on "View Results in Table","Log Viewer"
+
+4. (Load Test machine): Insert Groovy Script on "Debug JSR223 PostProcessor" (TestPlan ==> Create Account Thread Group ==> Simple Controller ==> Debug Sampler)
+----------------------------------------------------------------------------------------------
+
+int count = Integer.parseInt(vars.get("FBField_matchNr"));
+log.info("<=========================Regular Express Extractor:Total Vault Iteration "+count+"<=========================>");
+String g1="";
+String g2="";
+for(int i=1;i<=count;i++)
+{
+	g1=vars.get("FBField_"+i+"_g1");
+	g2=vars.get("FBField_"+i+"_g2");
+	log.info("FBField Iteration:"+i+"  Group 1:"+g1);
+	log.info("FBField Iteration:"+i+"  Group 2:"+g2);
+}
+log.info("<=========================Regular Express Extractor:END Record<=========================>");
+count = Integer.parseInt(vars.get("XPath_matchNr"));
+log.info("<=========================Regular XPath:Total Vault Iteration "+count+"<=========================>");
+String g3="";
+for(int i=1;i<=count;i++)
+{
+	g3=vars.get("XPath_"+i);
+	log.info("XPath No:"+i+" Value:"+g3);
+}
+log.info("<=========================Regular XPath:END Record<=========================>");
+
+----------------------------------------------------------------------------------------------
+
+5. (Load Test Machine) Enable Debug Sampler and Start performance test (Round 2) and check log on "View Results in Table","Log Viewer"
+
+6. (Load Test Machine) Enable Sampler "Second HTTP Request with RegEx"
+
+7. (Load Test Machine) Check JSR223 PreProcess and User Defined Vaeriables
+
+8. (Load Test Machine) Start performance test (Round 3) and check log on "View Results in Table","Log Viewer"

@@ -1,0 +1,32 @@
+FROM alpine:3.14.0
+LABEL maintainer=”eva10409@gmail.com
+ARG JMETER_VERSION="5.4.1"
+ENV JMETER_HOME /opt/apache-jmeter-${JMETER_VERSION}
+ENV JMETER_BIN  ${JMETER_HOME}/bin
+ENV MIRROR_HOST https://downloads.apache.org/jmeter
+ENV JMETER_DOWNLOAD_URL ${MIRROR_HOST}/binaries/apache-jmeter-${JMETER_VERSION}.tgz
+ENV JMETER_PLUGINS_DOWNLOAD_URL https://raw.githubusercontent.com/praparn/jmeter-workshop-072021/master/Workshop-2-4-Plugin
+ENV JMETER_PLUGINS_FOLDER ${JMETER_HOME}/lib/ext/
+RUN    apk update \
+	&& apk upgrade \
+	&& apk add ca-certificates \
+	&& update-ca-certificates \
+            && apk add --update openjdk8-jre tzdata curl unzip bash \
+            && cp /usr/share/zoneinfo/Europe/Rome /etc/localtime \
+            && echo "Asia/Bangkok" >  /etc/timezone \
+	&& rm -rf /var/cache/apk/* \
+	&& mkdir -p /tmp/dependencies  \
+	&& curl -L -k --silent ${JMETER_DOWNLOAD_URL} >  /tmp/dependencies/apache-jmeter-${JMETER_VERSION}.tgz  \
+	&& mkdir -p /opt  \
+	&& tar -xzf /tmp/dependencies/apache-jmeter-${JMETER_VERSION}.tgz -C /opt  \
+	&& rm -rf /tmp/dependencies && chmod 777 -R ${JMETER_HOME}
+RUN curl -L --silent ${JMETER_PLUGINS_DOWNLOAD_URL}/jmeter-plugins-manager-1.6.jar -o ${JMETER_PLUGINS_FOLDER}/jmeter-plugins-manager-1.6.jar
+RUN curl -L --silent ${JMETER_PLUGINS_DOWNLOAD_URL}/jmeter-plugins-casutg-2.9.jar -o ${JMETER_PLUGINS_FOLDER}/jmeter-plugins-casutg-2.9.jar
+RUN curl -L --silent ${JMETER_PLUGINS_DOWNLOAD_URL}/jmeter-plugins-graphs-additional-2.0.jar -o ${JMETER_PLUGINS_FOLDER}/jmeter-plugins-graphs-additional-2.0.jar
+RUN curl -L --silent ${JMETER_PLUGINS_DOWNLOAD_URL}/jmeter-plugins-graphs-basic-2.0.jar -o ${JMETER_PLUGINS_FOLDER}/jmeter-plugins-graphs-basic-2.0.jar
+ENV PATH $PATH:$JMETER_BIN
+COPY launch.sh /
+RUN chmod +x ./launch.sh
+WORKDIR ${JMETER_HOME}
+COPY user.properties ${JMETER_BIN}
+ENTRYPOINT ["/launch.sh"]

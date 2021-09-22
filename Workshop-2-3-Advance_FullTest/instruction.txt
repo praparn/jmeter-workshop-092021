@@ -1,0 +1,59 @@
+Part 1 : Start Performance Test (Load Test Machine)
+============================================================================================
+0. In case UltraVNC is cannot connect. Kill and recreate vnc session by command:
+    vncserver -kill :1
+    vncserver -localhost no -geometry 1600x900 :1
+
+============================================================================================
+Part 2: FULL LoadTest for MEAN.JS
+============================================================================================
+0. (Load Test Machine): Open testplan for kickstart on: "KickStart_MEANJS_WorkShop_2_3.jmx"
+
+1. (Local machine): Verify and Config "User Defined Variables" from Test Plan: "KickStart_MEANJS_WorkShop"
+    BaseIP: <Add private ip of application machine>
+    MariaUserName:  <Verify>
+    MariaPassWord:  <Verify>
+    MariaPort:      <Verify>
+    MongoDBPort:    <Verify>
+    MeanPort:       <Verify>
+    MegentoPort:    <Verify>
+
+2. (Load Test Machine) Verify Config Element on Test Plan
+    2.1 HTTP Header for Android:
+    2.2 HTTP Cookie Manager:
+    2.3 HTTP Cache Manager:
+
+3. (Load Test Machine) Verify "SignUp Thread Group" with following variable
+    3.1 Number of Threads (usrs): 200
+    3.2 Ramp-Up Period (in seconds): 120
+
+4. (Load Test Machine) Verify and Config "CSV Data Set 1 Config" (KickStart_MEANJS_Workshop_2_3 ==> SignUp Thread Group ==> CSV Data Set1 Config)
+    4.1 Filename: <Browser Filename: MEANJSData.csv within Folder workshop>
+    4.2 File encoding: <Verify>
+    4.3 Variable Names (comma-delimited): <Verify>
+
+5. (Load Test Machine) Verify "Login Thread Group" with following variable
+    3.1 Number of Threads (usrs): 300
+    3.2 Ramp-Up Period (in seconds): 120
+
+6. (Load Test Machine) Verify and Config "CSV Data Set 2 Config" (KickStart_MEANJS_Workshop_2_3 ==> SignUp Thread Group ==> CSV Data Set1 Config)
+    4.1 Filename: <Browser Filename: MEANJSData_Modified.csv within Folder workshop>
+    4.2 File encoding: <Verify>
+    4.3 Variable Names (comma-delimited): <Verify>
+
+7. (Load Test Machine) Start Load Test Process (Estimate 10 min or more for finished) within 3 Phase
+    Phase 0: WarmUp (First Page View)
+    Phase 1: SignUp (Insert 5000 Users)
+    Phase 2: Login (Login / Update / View Page)
+    Phase 3: SignOut
+
+8. (Application Machine) During load test was run. Check resource consume via cAdvisor, command listening   
+    8.1 Run command below for check result:
+        8.1.1 docker stats
+        8.1.2 top
+        8.1.3 vmstat 2
+        8.1.4 iostat -xtc 2
+        8.1.5 sar -n DEV 2
+
+*Remark:
+    If you have time slot more. Let's try to configure No.5 for 300,600 concurrent user
